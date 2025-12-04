@@ -34,6 +34,39 @@ function Dashboard({ user }) {
   const isCompleted = (type) =>
     quizzes.some((q) => q.type === type && q.completed);
 
+  const restartQuiz = async (type) => {
+    if (!window.confirm("🔁 Restart this quiz? Answers will be erased!")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch(
+        `${process.env.REACT_APP_API_BASE_URL ||
+        "https://margdarshak-backend-t6y6.onrender.com"}/api/quizzes/reset/${type}/reset`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // ✨ Update UI without logging out
+      setQuizzes((prev) =>
+        prev.map((q) =>
+          q.type === type ? { ...q, completed: false, responses: {} } : q
+        )
+      );
+
+      alert("✔ Quiz restarted successfully!");
+    
+    } catch (error) {
+      console.error("Restart Quiz Error:", error);
+      alert("Failed to restart quiz");
+    }
+  };
+
   const generateReport = async () => {
     if (loadingReport) return;
     setLoadingReport(true);
@@ -100,6 +133,16 @@ function Dashboard({ user }) {
             >
               {isCompleted(type.id) ? "Completed" : "Start Quiz"}
             </button>
+
+            {isCompleted(type.id) && (
+              <button
+                className="btn btn-danger"
+                style={{ marginTop: "8px" }}
+                onClick={() => restartQuiz(type.id)}
+              >
+                🔁 Restart Quiz
+              </button>
+            )}
           </div>
         ))}
       </div>

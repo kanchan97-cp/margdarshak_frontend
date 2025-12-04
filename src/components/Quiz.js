@@ -38,11 +38,25 @@ function Quiz({ user }) {
 
   const handleSubmit = async () => {
     try {
-      await API.post('/api/quizzes', { type, responses });
+      const answersArray = Object.keys(responses).map(id => ({
+        questionId: id,
+        selectedOption: responses[id]
+      }));
+
+      const body = {
+        type,
+        answers: answersArray
+      };
+
+      console.log("Submitting payload:", body);
+
+      const res = await API.post('/quizzes', body);
+      console.log("Submission Success:", res.data);
+
       setIsCompleted(true);
     } catch (err) {
-      console.error("Failed to submit quiz", err);
-      alert("Failed to submit quiz. Try again.");
+      console.error("Failed to submit quiz:", err.response?.data || err.message);
+      alert("Failed to submit quiz. Check console for more details.");
     }
   };
 
@@ -50,7 +64,7 @@ function Quiz({ user }) {
     return (
       <div className="section text-center">
         <h2>Quiz Completed!</h2>
-        <p>Your responses have been saved.</p>
+        <p>Your responses have been saved successfully.</p>
         <button className="btn" onClick={() => navigate('/dashboard')}>
           Go to Dashboard
         </button>
