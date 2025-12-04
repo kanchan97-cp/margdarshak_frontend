@@ -8,6 +8,7 @@ function Quiz({ user }) {
   const navigate = useNavigate();
   const [responses, setResponses] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const quizQuestions = questions[type] || [];
   const progress = ((currentQuestion + 1) / quizQuestions.length) * 100;
@@ -27,12 +28,32 @@ function Quiz({ user }) {
   const handleSubmit = async () => {
     try {
       await API.post('/quizzes', { type, responses });
-      navigate('/dashboard');
+      setIsCompleted(true);
+      // navigate('/dashboard'); // Removed immediate redirect
     } catch (err) {
       console.error("Failed to submit quiz", err);
       alert("Failed to submit quiz. Please try again.");
     }
   };
+
+  const handleRestart = () => {
+    setResponses({});
+    setCurrentQuestion(0);
+    setIsCompleted(false);
+  };
+
+  if (isCompleted) {
+    return (
+      <div className="section text-center">
+        <h2>Quiz Completed!</h2>
+        <p>Your responses have been saved.</p>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+          <button className="btn" onClick={() => navigate('/dashboard')}>Go to Dashboard</button>
+          <button className="btn btn-secondary" onClick={handleRestart}>Restart Quiz</button>
+        </div>
+      </div>
+    );
+  }
 
   if (!quizQuestions.length) return <div className="section">Quiz not found</div>;
 

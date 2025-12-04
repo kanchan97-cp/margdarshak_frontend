@@ -1,93 +1,149 @@
+// src/components/Report.jsx
+
 import React, { useEffect, useState } from "react";
-import jsPDF from "jspdf";
-import API from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
-export default function Report() {
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL ||
+  "https://margdarshak-backend-t6y6.onrender.com";
+
+const Report = () => {
+  const navigate = useNavigate();
   const [reports, setReports] = useState([]);
-  const [selected, setSelected] = useState(null);
 
-  useEffect(() => {
-    loadReports();
-  }, []);
+  // ✅ Reports fetch
+  const fetchReports = async () => {
+    const token = localStorage.getItem("token");
 
-  const loadReports = async () => {
-    try {
-      const res = await API.get("/reports");
-      setReports(res.data);
-    } catch {
-      alert("Failed to load reports!");
-    }
-  };
-
-  const generateReport = async () => {
-    try {
-      const res = await API.post("/reports/generate");
-      setSelected(res.data);
-      loadReports();
-    } catch {
-      alert("Please complete all quizzes first!");
-    }
-  };
-
-  const generatePDF = (report) => {
-    const doc = new jsPDF();
-    doc.text(report.title, 10, 10);
-
-    let y = 20;
-    report.careers.forEach((careerObj, i) => {
-      doc.text(`${i + 1}. ${careerObj.career}`, 10, y);
-      y += 6;
-      doc.text(`Why: ${careerObj.reason}`, 10, y);
-      y += 8;
-      careerObj.roadmap.forEach(step => {
-        doc.text(`• ${step}`, 12, y);
-        y += 6;
-      });
-      y += 6;
+    const res = await fetch(`${API_BASE_URL}/api/reports`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    doc.save("Career_Report.pdf");
+    const data = await res.json();
+    setReports(data);
   };
 
-  if (selected) {
-    return (
-      <div className="section">
-        <button className="btn" onClick={() => setSelected(null)}>← Back</button>
-        <h2>{selected.title}</h2>
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
-        {selected.careers.map((c, i) => (
-          <div key={i} className="card">
-            <h3>{c.career}</h3>
-            <p><strong>Why:</strong> {c.reason}</p>
-            <h4>Roadmap:</h4>
-            <ul>
-              {c.roadmap.map((step, idx) => (
-                <li key={idx}>{step}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-
-        <button className="btn" onClick={() => generatePDF(selected)}>
-          Download PDF
-        </button>
-      </div>
+  // ✅ Proper delete handler
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "🛑 This report will be permanently deleted! Continue?"
     );
-  }
+    if (!confirmDelete) return;
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API_BASE_URL}/api/reports/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`, // ❌ no Content-Type
+      },
+    });
+
+    if (!res.ok) {
+      alert("❌ Failed to delete report. Try again");
+      return;
+    }
+
+    setReports((prev) => prev.filter((r) => r._id !== id));
+    alert("✔ Report permanently deleted");
+  };
+
+  const styles = {
+    wrapper: {
+      padding: "50px 20px",
+      background: "linear-gradient(to bottom, #e9f1ff, #ffffff)",
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+    },
+    heading: {
+      fontSize: "32px",
+      fontWeight: "700",
+      color: "#0b3d91",
+      marginBottom: "25px",
+    },
+    cardList: { width: "90%", maxWidth: "850px" },
+    card: {
+      background: "#fff",
+      padding: "20px",
+      borderRadius: "14px",
+      marginBottom: "12px",
+      boxShadow: "0 5px 12px rgba(0,0,0,0.12)",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    contentBox: { cursor: "pointer" },
+    title: { fontSize: "19px", fontWeight: "600" },
+    date: { fontSize: "14px", color: "#677" },
+    btnContainer: { display: "flex", gap: "10px" },
+    viewBtn: {
+      background: "#1565ff",
+      color: "#fff",
+      border: "none",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontWeight: "600",
+    },
+    deleteBtn: {
+      background: "#e63946",
+      color: "#fff",
+      border: "none",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontWeight: "600",
+    },
+  };
+
+  const formatDate = (d) => new Date(d).toLocaleDateString("en-IN");
 
   return (
-    <div className="section">
-      <h2>Your Career Reports</h2>
-      <button className="btn" onClick={generateReport}>Generate Report</button>
+    <div style={styles.wrapper}>
+      <h2 style={styles.heading}>📊 Your Career Reports</h2>
 
-      <div className="grid" style={{ marginTop: "20px" }}>
-        {reports.map(r => (
-          <div key={r._id} className="card">
-            <h3>{r.title}</h3>
-            <button className="btn" onClick={() => setSelected(r)}>View</button>
-          </div>
-        ))}
+      <div style={styles.cardList}>
+        {reports.length < 1 ? (
+          <p>No reports yet</p>
+        ) : (
+          reports.map((report) => (
+            <div style={styles.card} key={report._id}>
+              <div
+                style={styles.contentBox}
+                onClick={() => navigate(`/report/${report._id}`)}
+              >
+                <h4 style={styles.title}>{report.title}</h4>
+                <p style={styles.date}>
+                  Generated: {formatDate(report.createdAt)}
+                </p>
+              </div>
+
+              <div style={styles.btnContainer}>
+                <button
+                  style={styles.viewBtn}
+                  onClick={() => navigate(`/report/${report._id}`)}
+                >
+                  View
+                </button>
+                <button
+                  style={styles.deleteBtn}
+                  onClick={() => handleDelete(report._id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default Report;

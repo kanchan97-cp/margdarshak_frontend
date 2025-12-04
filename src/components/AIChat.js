@@ -1,18 +1,38 @@
 import React, { useState } from 'react';
 
+import API from '../utils/api';
+
 function AIChat() {
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const [chat, setChat] = useState([
     { user: '', ai: 'Hello! I am your AI Career Mentor. Ask me anything about your career path, studies, or interests.' }
   ]);
 
-  const sendMessage = () => {
-    if (!message.trim()) return;
+  const sendMessage = async () => {
+    if (!message.trim() || loading) return;
 
-    // Mock AI response for now
-    const newChat = [...chat, { user: message, ai: 'That is a great question! Based on general trends, I would suggest exploring fields that align with your curiosity. (Note: Full AI integration requires backend setup).' }];
-    setChat(newChat);
+    const userMsg = message;
+    setChat([...chat, { user: userMsg, ai: '...' }]);
     setMessage('');
+    setLoading(true);
+
+    try {
+      const res = await API.post('/chat', { message: userMsg });
+      setChat(prev => {
+        const newChat = [...prev];
+        newChat[newChat.length - 1].ai = res.data.reply;
+        return newChat;
+      });
+    } catch (err) {
+      setChat(prev => {
+        const newChat = [...prev];
+        newChat[newChat.length - 1].ai = "Sorry, I'm having trouble connecting right now.";
+        return newChat;
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

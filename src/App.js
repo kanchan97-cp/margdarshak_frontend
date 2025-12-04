@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Components
 import Header from './components/Header';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
@@ -10,6 +12,7 @@ import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
 import Quiz from './components/Quiz';
 import Report from './components/Report';
+import ReportDetails from './components/ReportDetails';  // 👈 Added
 import AIChat from './components/AIChat';
 import AdminPanel from './components/AdminPanel';
 
@@ -18,6 +21,7 @@ import AdminPanel from './components/AdminPanel';
 function App() {
   const [user, setUser] = useState(null);
 
+  // Auto-login if token exists
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -29,26 +33,66 @@ function App() {
     <Router>
       <div className="app">
         <Header user={user} setUser={setUser} />
+        
         <Routes>
-          <Route path="/" element={
-            user ? <Navigate to="/dashboard" /> : (
-              <>
-                <Hero />
-                <HowItWorks />
-                <SuccessStories />
-                <SuccessStories />
-              </>
-            )
-          } />
+          {/* Public Landing Page */}
+          <Route
+            path="/"
+            element={
+              user ? (
+                <Navigate to="/dashboard" />
+              ) : (
+                <>
+                  <Hero />
+                  <HowItWorks />
+                  <SuccessStories />
+                </>
+              )
+            }
+          />
 
+          {/* Auth Routes */}
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
-          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
-          <Route path="/quiz/:type" element={user ? <Quiz user={user} /> : <Navigate to="/login" />} />
-          <Route path="/report" element={user ? <Report user={user} /> : <Navigate to="/login" />} />
-          <Route path="/ai-chat" element={user ? <AIChat user={user} /> : <Navigate to="/login" />} />
-          <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/dashboard" />} />
+
+          {/* Dashboard */}
+          <Route
+            path="/dashboard"
+            element={user ? <Dashboard user={user} /> : <Navigate to="/login" />}
+          />
+
+          {/* Quiz */}
+          <Route
+            path="/quiz/:type"
+            element={user ? <Quiz user={user} /> : <Navigate to="/login" />}
+          />
+
+          {/* Reports Section */}
+          <Route
+            path="/report"
+            element={user ? <Report user={user} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/report/:id"
+            element={user ? <ReportDetails user={user} /> : <Navigate to="/login" />}
+          />
+
+          {/* AI Chat Mentor */}
+          <Route
+            path="/ai-chat"
+            element={user ? <AIChat user={user} /> : <Navigate to="/login" />}
+          />
+
+          {/* Admin Panel */}
+          <Route
+            path="/admin"
+            element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/dashboard" />}
+          />
+
+          {/* Fallback Route */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+
         <Footer />
       </div>
     </Router>
