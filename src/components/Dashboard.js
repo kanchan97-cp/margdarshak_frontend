@@ -1,61 +1,72 @@
-import React, { useEffect, useState } from 'react';
-import API from '../utils/api';
-import { useNavigate } from 'react-router-dom';
+// src/pages/Dashboard.js
+import React, { useEffect, useState } from "react";
+import API from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard({ user }) {
   const navigate = useNavigate();
   const [quizzes, setQuizzes] = useState([]);
   const [progress, setProgress] = useState(0);
+  const [loadingReport, setLoadingReport] = useState(false);
 
   useEffect(() => {
-    API.get('/quizzes')
-      .then(res => {
+    API.get("/quizzes")
+      .then((res) => {
         setQuizzes(res.data);
 
         const completedTypes = new Set(
-          res.data.filter(q => q.completed).map(q => q.type)
+          res.data.filter((q) => q.completed).map((q) => q.type)
         );
+
         setProgress((completedTypes.size / 5) * 100);
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error("❌ Quiz Load Error:", err));
   }, []);
 
   const quizTypes = [
-    { id: 'orientation', label: 'Orientation Style', desc: 'Discover your work style.' },
-    { id: 'interest', label: 'Interest Profiler', desc: 'What do you love to do?' },
-    { id: 'aptitude', label: 'Aptitude Test', desc: 'Test your logical skills.' },
-    { id: 'personality', label: 'Personality Assessment', desc: 'Understand who you are.' },
-    { id: 'emotional', label: 'Emotional Intelligence', desc: 'Handle emotions smartly.' }
+    { id: "orientation", label: "Orientation Style", desc: "Discover your work style." },
+    { id: "interest", label: "Interest Profiler", desc: "What do you love to do?" },
+    { id: "aptitude", label: "Aptitude Test", desc: "Test your logical skills." },
+    { id: "personality", label: "Personality Assessment", desc: "Understand who you are." },
+    { id: "emotional", label: "Emotional Intelligence", desc: "Handle emotions smartly." }
   ];
 
   const isCompleted = (type) =>
-    quizzes.some(q => q.type === type && q.completed);
+    quizzes.some((q) => q.type === type && q.completed);
 
   const generateReport = async () => {
+    if (loadingReport) return;
+    setLoadingReport(true);
+
     try {
       const token = localStorage.getItem("token");
-
       const res = await fetch(
         `${process.env.REACT_APP_API_BASE_URL ||
-          "https://margdarshak-backend-t6y6.onrender.com"}/api/reports/generate`,
+        "https://margdarshak-backend-t6y6.onrender.com"}/api/reports/generate`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: token ? `Bearer ${token}` : "",
-          }
+          },
         }
       );
 
       if (!res.ok) {
-        return alert("⚠ Please complete all quizzes before generating report!");
+        const data = await res.json();
+        alert(data.error || "⚠ Please complete all quizzes first!");
+        setLoadingReport(false);
+        return;
       }
 
-      alert("🎉 Career Report Generated Successfully!");
-      navigate("/report");
+      const report = await res.json();
+      navigate(`/report/${report._id}`);
+
     } catch (err) {
-      console.error(err);
-      alert("❌ Failed to generate report. Try again!");
+      console.error("Report Generation Error:", err);
+      alert("❌ Failed to generate report!");
+    } finally {
+      setLoadingReport(false);
     }
   };
 
@@ -66,15 +77,18 @@ function Dashboard({ user }) {
         <p>You are {progress}% closer to discovering your career path.</p>
 
         <div className="progress-container">
-          <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+          <div
+            className="progress-bar"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
       </div>
 
       <div className="grid">
-        {quizTypes.map(type => (
+        {quizTypes.map((type) => (
           <div
             key={type.id}
-            className={`card ${isCompleted(type.id) ? 'card-border-secondary' : 'card-border-primary'}`}
+            className={`card ${isCompleted(type.id) ? "card-border-secondary" : "card-border-primary"}`}
           >
             <h3>{type.label}</h3>
             <p>{type.desc}</p>
@@ -93,12 +107,14 @@ function Dashboard({ user }) {
       {progress === 100 && (
         <div className="mt-2 text-center">
           <h3>🎯 You've completed all assessments!</h3>
+
           <button
             className="btn"
-            style={{ fontSize: '1.1rem', marginTop: '1rem' }}
+            style={{ fontSize: "1.1rem", marginTop: "1rem" }}
             onClick={generateReport}
+            disabled={loadingReport}
           >
-            🚀 Generate Your Career Report
+            {loadingReport ? "⏳ Generating Report..." : "🚀 Generate Your Career Report"}
           </button>
         </div>
       )}

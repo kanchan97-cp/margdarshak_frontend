@@ -10,31 +10,39 @@ const API_BASE_URL =
 const Report = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch Reports
   const fetchReports = async () => {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    const res = await fetch(`${API_BASE_URL}/api/reports`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      const res = await fetch(`${API_BASE_URL}/api/reports`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const data = await res.json();
-    setReports(data);
+      const data = await res.json();
+
+      console.log("Reports API Response:", data);
+
+      setReports(Array.isArray(data) ? data : []); // ← IMPORTANT FIX
+    } catch (err) {
+      console.error("Fetch Reports Error:", err);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchReports();
   }, []);
 
-  // Delete Report
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "🛑 This report will be permanently deleted! Continue?"
-    );
-    if (!confirmDelete) return;
-
     const token = localStorage.getItem("token");
+    if (!token) return alert("Not authenticated");
+
+    const confirmDelete = window.confirm("🛑 Confirm delete permanently?");
+    if (!confirmDelete) return;
 
     const res = await fetch(`${API_BASE_URL}/api/reports/${id}`, {
       method: "DELETE",
@@ -43,118 +51,71 @@ const Report = () => {
       },
     });
 
-    if (!res.ok) {
-      alert("❌ Failed to delete report. Try again.");
-      return;
+    if (res.ok) {
+      setReports((prev) => prev.filter((report) => report._id !== id));
+      alert("✔ Report deleted");
+    } else {
+      alert("❌ Delete failed");
     }
-
-    setReports((prev) => prev.filter((r) => r._id !== id));
-    alert("✔ Report deleted successfully!");
   };
+
+  if (loading)
+    return <h2 style={{ textAlign: "center", marginTop: "50px" }}>Loading...</h2>;
 
   const styles = {
     wrapper: {
-      padding: "50px 20px",
-      background: "linear-gradient(to bottom, #e9f1ff, #ffffff)",
+      padding: "40px",
+      background: "#eef5ff",
       minHeight: "100vh",
       display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
+      justifyContent: "center",
     },
-    heading: {
-      fontSize: "32px",
-      fontWeight: "700",
-      color: "#0b3d91",
-      marginBottom: "25px",
-    },
-    cardList: { width: "90%", maxWidth: "850px" },
     card: {
       background: "#fff",
-      padding: "20px",
+      padding: "18px",
       borderRadius: "14px",
       marginBottom: "12px",
-      boxShadow: "0 5px 12px rgba(0,0,0,0.12)",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
+      boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
     },
-    contentBox: { cursor: "pointer" },
-    title: { fontSize: "19px", fontWeight: "600" },
-    date: { fontSize: "14px", color: "#677" },
-    btnContainer: { display: "flex", gap: "10px" },
-    viewBtn: {
-      background: "#1565ff",
-      color: "#fff",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
+    btn: {
+      padding: "8px 14px",
+      borderRadius: "6px",
       cursor: "pointer",
       fontWeight: "600",
-    },
-    restartBtn: {
-      background: "#ff9800",
-      color: "#fff",
       border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      cursor: "pointer",
-      fontWeight: "600",
-    },
-    deleteBtn: {
-      background: "#e63946",
-      color: "#fff",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      cursor: "pointer",
-      fontWeight: "600",
     },
   };
 
-  const formatDate = (d) => new Date(d).toLocaleDateString("en-IN");
-
   return (
     <div style={styles.wrapper}>
-      <h2 style={styles.heading}>📊 Your Career Reports</h2>
+      <div style={{ width: "85%", maxWidth: "900px" }}>
+        <h2 style={{ marginBottom: "20px" }}>📊 Your Reports</h2>
 
-      <div style={styles.cardList}>
-        {reports.length < 1 ? (
+        {reports.length === 0 ? (
           <p>No reports yet</p>
         ) : (
           reports.map((report) => (
             <div style={styles.card} key={report._id}>
               <div
-                style={styles.contentBox}
+                style={{ cursor: "pointer" }}
                 onClick={() => navigate(`/report/${report._id}`)}
               >
-                <h4 style={styles.title}>{report.title}</h4>
-                <p style={styles.date}>
-                  Generated: {formatDate(report.createdAt)}
-                </p>
+                <h3>{report.title || "Career Report"}</h3>
+                <p>{new Date(report.createdAt).toLocaleDateString()}</p>
               </div>
 
-              <div style={styles.btnContainer}>
+              <div style={{ display: "flex", gap: "10px" }}>
                 <button
-                  style={styles.viewBtn}
+                  style={{ ...styles.btn, background: "#0077ff", color: "#fff" }}
                   onClick={() => navigate(`/report/${report._id}`)}
                 >
                   View
                 </button>
-
-                {/* Restart Quiz Button Added */}
                 <button
-                  style={styles.restartBtn}
-                  onClick={() =>
-                    navigate(`/quiz/${report.quizAnswers?.[0]?.type}`, {
-                      state: { quizType: report.quizAnswers?.[0]?.type },
-                    })
-                  }
-                >
-                  Restart
-                </button>
-
-                <button
-                  style={styles.deleteBtn}
+                  style={{ ...styles.btn, background: "#e63946", color: "#fff" }}
                   onClick={() => handleDelete(report._id)}
                 >
                   Delete
