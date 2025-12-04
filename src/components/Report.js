@@ -11,7 +11,7 @@ const Report = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
 
-  // ✅ Reports fetch
+  // Fetch Reports
   const fetchReports = async () => {
     const token = localStorage.getItem("token");
 
@@ -27,7 +27,7 @@ const Report = () => {
     fetchReports();
   }, []);
 
-  // ✅ Proper delete handler
+  // Delete Report
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
       "🛑 This report will be permanently deleted! Continue?"
@@ -39,17 +39,17 @@ const Report = () => {
     const res = await fetch(`${API_BASE_URL}/api/reports/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${token}`, // ❌ no Content-Type
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!res.ok) {
-      alert("❌ Failed to delete report. Try again");
+      alert("❌ Failed to delete report. Try again.");
       return;
     }
 
     setReports((prev) => prev.filter((r) => r._id !== id));
-    alert("✔ Report permanently deleted");
+    alert("✔ Report deleted successfully!");
   };
 
   const styles = {
@@ -84,6 +84,15 @@ const Report = () => {
     btnContainer: { display: "flex", gap: "10px" },
     viewBtn: {
       background: "#1565ff",
+      color: "#fff",
+      border: "none",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontWeight: "600",
+    },
+    restartBtn: {
+      background: "#ff9800",
       color: "#fff",
       border: "none",
       padding: "10px 16px",
@@ -131,6 +140,19 @@ const Report = () => {
                 >
                   View
                 </button>
+
+                {/* Restart Quiz Button Added */}
+                <button
+                  style={styles.restartBtn}
+                  onClick={() =>
+                    navigate(`/quiz/${report.quizAnswers?.[0]?.type}`, {
+                      state: { quizType: report.quizAnswers?.[0]?.type },
+                    })
+                  }
+                >
+                  Restart
+                </button>
+
                 <button
                   style={styles.deleteBtn}
                   onClick={() => handleDelete(report._id)}

@@ -1,5 +1,4 @@
 // src/components/ReportDetails.jsx
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -47,82 +46,59 @@ const ReportDetails = () => {
 
   const formatDate = (d) => new Date(d).toLocaleDateString("en-IN");
 
-  const styles = {
-    page: {
-      padding: "60px 20px",
-      background: "linear-gradient(to bottom, #eef5ff, #ffffff)",
-      minHeight: "100vh",
-      display: "flex",
-      justifyContent: "center",
-    },
-    container: {
-      width: "95%",
-      maxWidth: "920px",
-      background: "#fff",
-      padding: "35px",
-      borderRadius: "16px",
-      boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-    },
-    backBtn: {
-      background: "none",
-      color: "#1155cc",
-      fontWeight: "600",
-      fontSize: "16px",
-      border: "none",
-      cursor: "pointer",
-      marginBottom: "15px",
-    },
-    title: { fontSize: "26px", fontWeight: "700", marginBottom: "8px" },
-    date: { color: "#5d6d88", marginBottom: "20px" },
-    sectionTitle: {
-      fontSize: "20px",
-      fontWeight: "600",
-      marginTop: "28px",
-      marginBottom: "10px",
-    },
-    box: {
-      background: "#f6f9ff",
-      padding: "15px",
-      borderRadius: "12px",
-      border: "1px solid #d6e2ff",
-      marginBottom: "10px",
-    },
-    buttons: { display: "flex", gap: "12px", marginTop: "30px" },
-    btn: {
-      padding: "10px 18px",
-      borderRadius: "8px",
-      border: "none",
-      cursor: "pointer",
-      fontWeight: "600",
-      fontSize: "15px",
-      color: "#fff",
-    },
-  };
+  const Section = ({ title, children }) => (
+    <>
+      <h3 style={styles.sectionTitle}>{title}</h3>
+      <div style={styles.box}>{children}</div>
+    </>
+  );
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <button style={styles.backBtn} onClick={() => navigate("/report")}>
-          ← Back
+          ← Back to Reports
         </button>
 
         <h2 style={styles.title}>{report.title}</h2>
         <p style={styles.date}>Generated: {formatDate(report.createdAt)}</p>
 
-        <h3 style={styles.sectionTitle}>Career Recommendations</h3>
-        {report.careers?.map((c, i) => (
-          <div style={styles.box} key={i}>
-            <h4>{c.career}</h4>
-            <p>{c.reason}</p>
-          </div>
-        ))}
+        <Section title="Top Career Recommendations">
+          {report.careers?.map((c, i) => (
+            <div key={i} style={{ marginBottom: "10px" }}>
+              <h4>{c.career || c.role}</h4>
+              <p>{c.reason}</p>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="Personalized Career Roadmap">
+          <ul>
+            {report.careers
+              ?.flatMap((c) => c.roadmap || [])
+              .map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+          </ul>
+        </Section>
+
+        <Section title="Soft Skills & Growth Tips">
+          <p>Enhance communication, consistency, teamwork & practical projects.</p>
+        </Section>
 
         <div style={styles.buttons}>
+          <button
+            style={{ ...styles.btn, background: "#0077ff" }}
+            onClick={() => navigate("/dashboard")}
+          >
+            Dashboard
+          </button>
+
           <button
             style={{ ...styles.btn, background: "#28a745" }}
             onClick={() => window.print()}
           >
-            Download
+            Download PDF
           </button>
 
           <button
@@ -135,6 +111,62 @@ const ReportDetails = () => {
       </div>
     </div>
   );
+};
+
+const styles = {
+  page: {
+    padding: "50px 0",
+    background: "linear-gradient(to bottom, #e9f1ff, #ffffff)",
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+  },
+  container: {
+    width: "92%",
+    maxWidth: "900px",
+    background: "#fff",
+    padding: "35px",
+    borderRadius: "20px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+  },
+  backBtn: {
+    background: "none",
+    color: "#0b3d91",
+    fontWeight: "600",
+    fontSize: "16px",
+    border: "none",
+    cursor: "pointer",
+    marginBottom: "18px",
+  },
+  title: { fontSize: "30px", fontWeight: "700" },
+  date: { fontSize: "14px", color: "#555", marginBottom: "25px" },
+  sectionTitle: {
+    fontSize: "20px",
+    fontWeight: "600",
+    marginTop: "25px",
+    marginBottom: "12px",
+  },
+  box: {
+    background: "#f7faff",
+    padding: "18px",
+    borderRadius: "12px",
+    border: "1px solid #d0e0ff",
+  },
+  buttons: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "12px",
+    marginTop: "35px",
+  },
+  btn: {
+    padding: "10px 18px",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "15px",
+    color: "#fff",
+  },
 };
 
 export default ReportDetails;
